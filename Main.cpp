@@ -18,19 +18,19 @@ int main(int argc, char* argv[])
 
 	std::vector<char> fileData = fileUtils::ReadAllBytes("Does not Exist!");
 	std::cout << fileData.size() << std::endl;
-	
+
 	std::vector<byte> data = { 'a','b','c' };
 	std::vector<byte> salt = { 'a','b','c' };
 	std::vector<byte> iv = { 'a','b','c' };
-	std::vector<byte> aad = { 'a','b','c' };
+	std::vector<byte> aad = { 'a','b','c','d','e','f','g' };
 
-	printVector(data);
-	printVector(salt);
-	printVector(iv);
-	printVector(aad);
+	//printVector(data);
+	//printVector(salt);
+	//printVector(iv);
+	//printVector(aad);
 
 	EncryptedFile file(data, iv, salt, aad);
-	
+
 	// change data
 	data[0] = 'A';
 	salt[0] = 'A';
@@ -38,12 +38,25 @@ int main(int argc, char* argv[])
 	aad[0] = 'A';
 
 
-	printVector(file.getData());
-	printVector(file.getSalt());
-	printVector(file.getIV());
-	printVector(file.getAAD());
+
+	//printVector(data);
+	//printVector(salt);
+	//printVector(iv);
+	//printVector(aad);
+
+	//printVector(file.getData());
+	//printVector(file.getSalt());
+	//printVector(file.getIV());
+	//printVector(file.getAAD());
 
 
+	EncryptedFile in;
+
+
+	fileUtils::writeEncryptedFileToDisk("\\test.test", file);
+	in = fileUtils::readEncryptedFileFromDisk("\\test.test");
+
+	printVector(in.getAAD());
 
 
 	int wait;
