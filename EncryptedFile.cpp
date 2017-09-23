@@ -3,8 +3,7 @@
 #include "cereal\types\vector.hpp"
 #include <fstream>
 
-
-EncryptedFile fileUtils::readEncryptedFileFromDisk(const char filename[])
+EncryptedFile EncryptedFile::readEncryptedFileFromDisk(const char filename[])
 {
 	try
 	{
@@ -21,7 +20,7 @@ EncryptedFile fileUtils::readEncryptedFileFromDisk(const char filename[])
 	}
 }
 
-void fileUtils::writeEncryptedFileToDisk(const char filename[], const EncryptedFile& const enc)
+void EncryptedFile::writeEncryptedFileToDisk(const char filename[], const EncryptedFile & const enc)
 {
 	try
 	{
@@ -34,6 +33,3 @@ void fileUtils::writeEncryptedFileToDisk(const char filename[], const EncryptedF
 		std::cerr << e.what();
 	}
 }
-
-
-

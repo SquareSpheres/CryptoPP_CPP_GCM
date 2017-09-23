@@ -49,36 +49,36 @@ public:
 	/// Gets the encrypted data.
 	/// </summary>
 	/// <returns></returns>
-	std::vector<byte> getData() { return this->data; }
+	const std::vector<byte> * getData() { return &this->data; }
 	/// <summary>
 	/// Gets the iv.
 	/// </summary>
 	/// <returns></returns>
-	std::vector<byte> getIV() { return this->iv; }
+	const std::vector<byte> * getIV() { return &this->iv; }
 	/// <summary>
 	/// Gets the salt.
 	/// </summary>
 	/// <returns></returns>
-	std::vector<byte> getSalt() { return this->salt; }
+	const std::vector<byte> * getSalt() { return &this->salt; }
 	/// <summary>
 	/// Gets the additional authenticated data.
 	/// </summary>
 	/// <returns></returns>
-	std::vector<byte> getAAD() { return this->aad; }
+	const std::vector<byte> * getAAD() { return &this->aad; }
 
-};
-
-
-namespace fileUtils {
 
 	/// <summary>
 	/// Read a encryptedFile from disk.
 	/// </summary>
 	/// <returns>A a new instance of the <see cref="EncryptedFile"/> class.</returns>
-	EncryptedFile readEncryptedFileFromDisk(const char filename[]);
+	static EncryptedFile readEncryptedFileFromDisk(const char filename[]);
 	/// <summary>
 	/// Write a encryptedFile to disk.
 	/// </summary>
 	/// <returns></returns>
-	void writeEncryptedFileToDisk(const char filename[], const EncryptedFile& const enc);
-}
+	static void writeEncryptedFileToDisk(const char filename[], const EncryptedFile& const enc);
+	
+
+};
+
+
