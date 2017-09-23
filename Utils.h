@@ -1,8 +1,12 @@
 #pragma once
 #include <vector>
+#include <experimental\filesystem>
 #include "spdlog\spdlog.h"
 
 namespace fileUtils {
+
+
+	namespace filesystem = std::experimental::filesystem::v1;
 
 	/// <summary>
 	/// Read data from file and return it as a vector. If an 
@@ -11,6 +15,10 @@ namespace fileUtils {
 	/// <param name="filename">File location</param>
 	/// <returns>A vector with file bytes</returns>
 	std::vector<char> ReadAllBytes(char const* filename);
+
+
+	std::vector<filesystem::path> listFilesInDirRecursively(const char filename[]);
+	std::vector<filesystem::path> listFilesInDir(const char filename[]);
 
 }
 
