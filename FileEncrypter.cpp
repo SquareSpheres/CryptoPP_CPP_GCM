@@ -99,6 +99,26 @@ void FileEncrypter::generateRandomSalt(byte * const salt, unsigned saltSize)
 	random.GenerateBlock(salt, saltSize);
 }
 
+std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem::path> files, char password[])
+{
+	return std::vector<filesystem::path>();
+}
+
+std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const size_t num_files, char password[])
+{
+	return std::vector<filesystem::path>();
+}
+
+std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem::path> files, char password[])
+{
+	return std::vector<filesystem::path>();
+}
+
+std::vector<filesystem::path> FileEncrypter::decryptFiles(char ** files, const size_t num_files, char password[])
+{
+	return std::vector<filesystem::path>();
+}
+
 std::string FileEncrypter::decipherData(char password[], const byte salt[], const byte iv[], const std::string &encryptedData)
 {
 	// string for decrypted data
@@ -172,11 +192,19 @@ std::string FileEncrypter::cipherData(char password[], const byte data[], const 
 	return encryptedData;
 }
 
+/// <summary>
+/// Initializes a new instance of the <see cref="FileEncrypter"/> class.
+/// </summary>
 FileEncrypter::FileEncrypter()
-{
+{	
+	/*Empty*/
 }
 
 
+/// <summary>
+/// Finalizes an instance of the <see cref="FileEncrypter"/> class.
+/// </summary>
 FileEncrypter::~FileEncrypter()
-{
+{	
+	/*Empty*/
 }
