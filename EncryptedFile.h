@@ -29,8 +29,9 @@ public:
 	/// <param name="iv">The initialization vector.</param>
 	/// <param name="salt">The salt.</param>
 	/// <param name="aad">The additional authenticated data.</param>
-	EncryptedFile(std::vector<byte> & const data, std::vector<byte> iv, std::vector<byte> salt, std::vector<byte> aad)
-		:aad(aad), salt(salt), iv(iv), data(data) {
+	EncryptedFile(std::vector<byte> &data, std::vector<byte> iv, std::vector<byte> salt, std::vector<byte> aad)
+		:data(data), iv(iv), salt(salt), aad(aad)
+	{
 		assert(data.size() > 0 && iv.size() > 0 && salt.size() > 0);
 	}
 
@@ -70,14 +71,25 @@ public:
 	/// <summary>
 	/// Read a encryptedFile from disk.
 	/// </summary>
-	/// <returns>A a new instance of the <see cref="EncryptedFile"/> class.</returns>
-	static EncryptedFile readEncryptedFileFromDisk(const char filename[]);
+	/// <param name="filename">File location</param>
+	/// <returns>
+	/// A a new instance of the <see cref="EncryptedFile" /> class.
+	/// </returns>
+	static EncryptedFile readEncryptedFileFromDisk(const std::string &filename);
 	/// <summary>
 	/// Write a encryptedFile to disk.
 	/// </summary>
-	/// <returns></returns>
-	static void writeEncryptedFileToDisk(const char filename[], const EncryptedFile& const enc);
-	
+	/// <param name="filename">File location</param>
+	/// <param name="enc">The EncryptedFile object</param>
+	static void writeEncryptedFileToDisk(const std::string &filename, EncryptedFile&  enc);
+	/// <summary>
+	/// Determines whether a file is a serialized EncryptedFile.
+	/// </summary>
+	/// <param name="filename">File location</param>
+	/// <returns>
+	///   <c>true</c> if [is of type EncryptedFile]; otherwise, <c>false</c>.
+	/// </returns>
+	static bool isEncryptedFile(const std::string &filename);
 
 };
 
