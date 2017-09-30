@@ -12,7 +12,7 @@ static std::shared_ptr<spdlog::logger> LOG = spdlog::stdout_color_mt("FileUtils"
 namespace filesystem = std::experimental::filesystem::v1;
 
 
-std::vector<char> fileUtils::ReadAllBytes(char const * filename)
+std::vector<unsigned char> fileUtils::ReadAllBytes(char const * filename)
 {
 	std::ifstream ifs(filename, std::ios::binary | std::ios::ate);
 
@@ -20,16 +20,37 @@ std::vector<char> fileUtils::ReadAllBytes(char const * filename)
 	{
 		ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 		std::ifstream::pos_type pos = ifs.tellg();
-		std::vector<char>  result(pos);
+		std::vector<unsigned char>  result(pos);
 		ifs.seekg(0, std::ios::beg);
-		ifs.read(&result[0], pos);
+		ifs.read((char*)&result[0], pos);
+		ifs.close();
 		return result;
 	}
 	catch (const std::ios_base::failure& e)
 	{
 		LOG->critical(e.what());
-		return std::vector<char>();
+		return std::vector<unsigned char>();
 	}
+}
+
+
+void fileUtils::WriteAllBytes(char const * filename, std::vector<unsigned char> data)
+{
+
+	std::ofstream ofs(filename, std::ios::binary);
+
+	try
+	{
+		ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
+		ofs.write((char*)data.data(), data.size());
+		ofs.close();
+
+	}
+	catch (const std::ios_base::failure& e)
+	{
+		LOG->critical(e.what());
+	}
+
 }
 
 std::vector<filesystem::path> fileUtils::listFilesInDirRecursively(const char filename[])

@@ -14,7 +14,15 @@ namespace fileUtils {
 	/// </summary>
 	/// <param name="filename">File location</param>
 	/// <returns>A vector with file bytes</returns>
-	std::vector<char> ReadAllBytes(char const* filename);
+	std::vector<unsigned char> ReadAllBytes(char const* filename);
+
+	/// <summary>
+	/// Write data to file and 
+	/// </summary>
+	/// <param name="filename">File location</param>
+	/// <param name="data">Data to write</param>
+	/// <returns></returns>
+	void WriteAllBytes(char const* filename, std::vector<unsigned char> data);
 
 
 	std::vector<filesystem::path> listFilesInDirRecursively(const char filename[]);
