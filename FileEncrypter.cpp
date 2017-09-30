@@ -4,6 +4,9 @@
 #include "hkdf.h"
 #include "osrng.h"
 
+#include "spdlog\spdlog.h"
+#include "IOException.h"
+
 #include "aes.h"
 #include "gcm.h"
 
@@ -36,7 +39,6 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKey(char password[], char salt[])
 {
 	// get password and salt length
 	size_t passwordLength = strlen(password);
-	size_t saltLength = strlen(salt);
 
 	// create a key with specified size
 	CryptoPP::SecByteBlock key(CryptoPP::SHA256::DIGESTSIZE);
@@ -46,7 +48,7 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKey(char password[], char salt[])
 	// "purpose byte" is ignored for PBKDF2, and if therefore set to 0
 	// "timeInSeconds" is ignored because iteration count is specified
 	unsigned int achievedItCount = keyDerivationFunction.DeriveKey(key, key.size(), 0, (const byte*)password,
-		passwordLength, (const byte*)salt, saltLength, FileEncrypter::KDF_ITERATION_COUNT, 0);
+		passwordLength, (const byte*)salt, FileEncrypter::SALT_LENGTH, FileEncrypter::KDF_ITERATION_COUNT, 0);
 
 	if (achievedItCount < FileEncrypter::KDF_ITERATION_COUNT) LOG->error("achieved iteration count is lower than specified iteration count");
 
@@ -99,18 +101,163 @@ void FileEncrypter::generateRandomSalt(byte * const salt, unsigned saltSize)
 	random.GenerateBlock(salt, saltSize);
 }
 
+filesystem::path FileEncrypter::generateEncryptionName(filesystem::path originalFile)
+{
+	filesystem::path originalFileName = (originalFile.filename() += ".enc").string();
+	filesystem::path newPath = originalFile.remove_filename() /= originalFileName;
+
+	int count = 0;
+	while (filesystem::exists(newPath)) {
+		// prepend counting number
+		newPath = originalFile.remove_filename() /= originalFileName.string().insert(0, std::to_string(count++));
+	}
+
+	return newPath;
+}
+
+filesystem::path FileEncrypter::generateDecryptionName(filesystem::path encryptedFile)
+{
+	filesystem::path originalFileName = encryptedFile.filename();
+	// remove .enc extension if exist
+	if (encryptedFile.has_extension() && encryptedFile.extension() == ".enc") {
+		originalFileName.replace_extension("");
+	}
+
+	filesystem::path newPath = encryptedFile.remove_filename() /= originalFileName;
+
+	int count = 0;
+	while (filesystem::exists(encryptedFile))
+	{
+		newPath = encryptedFile.remove_filename() /= originalFileName.string().insert(0, std::to_string(count++));
+	}
+
+	return newPath;
+}
+
 std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem::path> files, char password[])
 {
-	return std::vector<filesystem::path>();
+
+	//create new success vector
+	std::vector<filesystem::path> successfullyEncrypted;
+	// generate new salt
+	byte salt[FileEncrypter::SALT_LENGTH];
+	FileEncrypter::generateRandomSalt(salt, FileEncrypter::SALT_LENGTH);
+	// generate new AES key
+	CryptoPP::SecByteBlock key = getAESKey(password, (char*)salt);
+
+	for (auto it = files.begin(); it != files.end(); ++it)
+	{
+		// check if file exist
+		if (!filesystem::exists(*it)) {
+			LOG->warn("Skipping {}, Cause : file does not exist", it->string());
+			continue;
+		}
+		// check if folder
+		if (filesystem::is_directory(*it)) {
+			LOG->warn("Skipping {}, Cause : file is a directory", it->string());
+			continue;
+		}
+		// check if file a valid file
+		if (!filesystem::is_regular_file(*it)) {
+			LOG->warn("Skipping {}, Cause : file is not a valid file", it->string());
+			continue;
+		}
+		// check if file size is 0
+		if (filesystem::is_empty(*it)) {
+			LOG->warn("Skipping {}, Cause : file size is 0", it->string());
+			continue;
+		}
+
+		// read file data
+		std::vector<byte> dataVector = fileUtils::ReadAllBytes(it->string().c_str());
+		// generate new IV
+		byte iv[FileEncrypter::IV_LENGTH];
+		FileEncrypter::generateRandomIV(iv, FileEncrypter::IV_LENGTH);
+		// encrypt data
+		std::vector<byte> encryptedData = cipherData(key, iv, dataVector);
+		// create EncrpytedFile
+		EncryptedFile encryptedFile(encryptedData, std::vector<byte>(iv, iv + sizeof(iv)), std::vector<byte>(salt, salt + sizeof(salt)), std::vector<byte>());
+		// generate new file path
+		filesystem::path newFilePath = FileEncrypter::generateEncryptionName(*it);
+
+
+		//try to write encrypted file to new path
+		try
+		{
+			EncryptedFile::writeEncryptedFileToDisk(newFilePath.string(), encryptedFile);
+			LOG->info("{} encrypted to {}", it->string(), newFilePath.string());
+			successfullyEncrypted.push_back(*it);
+
+		}
+		catch (const IOException &e)
+		{
+			LOG->debug("Writing encrypted file failed. Do some stuff here");
+			//TODO
+		}
+	}
+
+	return successfullyEncrypted;
 }
 
 std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const size_t num_files, char password[])
 {
-	return std::vector<filesystem::path>();
+	// create vector from 2d array
+	std::vector<filesystem::path> paths(num_files);
+	for (size_t i = 0; i < num_files; i++)
+	{
+		paths[i] = filesystem::path(files[i]);
+	}
+
+	return encryptFiles(paths, password);
 }
+
+
+
 
 std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem::path> files, char password[])
 {
+
+	// create new success vector
+	std::vector<filesystem::path> successfullyDecrypted;
+
+	for (auto it = files.begin(); it != files.end(); ++it) {
+
+		//try to read encrypted file from disk
+		try
+		{
+			EncryptedFile encryptedFile = EncryptedFile::readEncryptedFileFromDisk(it->string());
+
+			// get values from encrypted file
+			const std::vector<byte> *encData = encryptedFile.getData();
+			const std::vector<byte> *iv = encryptedFile.getIV();
+			const std::vector<byte> *salt = encryptedFile.getSalt();
+			const std::vector<byte> *aad = encryptedFile.getAAD();
+
+			// generate AES key
+			CryptoPP::SecByteBlock key = getAESKey(password, (char*)salt->data());
+			// decrypt data
+			std::vector<byte> decryptedData = decipherData(key, iv->data(), *encData);
+			// get new name for decrypted file
+			filesystem::path newFilePath = FileEncrypter::generateDecryptionName(*it);
+			// write data to new file
+			fileUtils::WriteAllBytes(newFilePath.string().c_str(), decryptedData);
+			// log result
+			LOG->info("{} decrypted to {}", it->string(), newFilePath.string());
+			// add to success list
+			successfullyDecrypted.push_back(*it);
+
+		}
+		catch (const IOException &e)
+		{
+			LOG->warn(e.what());
+			continue;
+		}
+	}
+
+
+
+
+
 	return std::vector<filesystem::path>();
 }
 
@@ -119,13 +266,11 @@ std::vector<filesystem::path> FileEncrypter::decryptFiles(char ** files, const s
 	return std::vector<filesystem::path>();
 }
 
-std::string FileEncrypter::decipherData(char password[], const byte salt[], const byte iv[], const std::string &encryptedData)
+std::vector<byte> FileEncrypter::decipherData(CryptoPP::SecByteBlock &key, const byte iv[], const std::vector<byte> &encryptedData)
 {
-	// string for decrypted data
-	std::string decryptedData;
 
-	// generate key
-	CryptoPP::SecByteBlock key = FileEncrypter::getAESKey(password, (char*)salt);
+	// array for decrypted data
+	std::vector<byte> decryptedData(encryptedData.size());
 
 	// get cipher
 	CryptoPP::GCM<CryptoPP::AES>::Decryption decryptor;
@@ -134,10 +279,10 @@ std::string FileEncrypter::decipherData(char password[], const byte salt[], cons
 	// try to decrypt
 	try
 	{
-		// StringSource --> Decryption filter --> StringSink
-		CryptoPP::StringSource(encryptedData, true,
+		// ArraySource --> Decryption filter --> ArraySink
+		CryptoPP::ArraySource(&encryptedData[0], encryptedData.size(), true,
 			new CryptoPP::AuthenticatedDecryptionFilter(decryptor,
-				new CryptoPP::StringSink(decryptedData), CryptoPP::AuthenticatedDecryptionFilter::DEFAULT_FLAGS, FileEncrypter::GCM_TAG_LENGTH));
+				new CryptoPP::ArraySink(&decryptedData[0], decryptedData.size()), CryptoPP::AuthenticatedDecryptionFilter::DEFAULT_FLAGS, FileEncrypter::GCM_TAG_LENGTH));
 	}
 	catch (CryptoPP::HashVerificationFilter::HashVerificationFailed& e)
 	{
@@ -152,26 +297,18 @@ std::string FileEncrypter::decipherData(char password[], const byte salt[], cons
 		LOG->critical(e.what());
 	}
 
-
 	return decryptedData;
 }
 
-std::string FileEncrypter::cipherData(char password[], const byte data[], const size_t dataLength)
+std::vector<byte> FileEncrypter::cipherData(CryptoPP::SecByteBlock &key, const byte iv[], const byte data[], const size_t dataLength)
 {
-	// generate new salt
-	byte salt[FileEncrypter::SALT_LENGTH];
-	FileEncrypter::generateRandomSalt(salt, FileEncrypter::SALT_LENGTH);
+	return cipherData(key, iv, std::vector<byte>(data, data + dataLength));
+}
 
-	// generate new IV
-	byte iv[FileEncrypter::IV_LENGTH];
-	FileEncrypter::generateRandomIV(iv, FileEncrypter::IV_LENGTH);
-
-	// create string for encrytped data
-	std::string encryptedData;
-
-	// generate key
-	CryptoPP::SecByteBlock key = FileEncrypter::getAESKey(password, (char*)salt);
-
+std::vector<byte> FileEncrypter::cipherData(CryptoPP::SecByteBlock &key, const byte iv[], const std::vector<byte> &data)
+{
+	// create vector for encrytped data
+	std::vector<byte> encryptedData(data.size() + CryptoPP::AES::BLOCKSIZE);
 	// get cipher
 	CryptoPP::GCM<CryptoPP::AES>::Encryption encryptor;
 	encryptor.SetKeyWithIV(key, key.size(), iv, FileEncrypter::IV_LENGTH);
@@ -179,10 +316,10 @@ std::string FileEncrypter::cipherData(char password[], const byte data[], const 
 	// try to encrypt
 	try
 	{
-		// ArraySource --> Encryption filter --> StringSink
-		CryptoPP::ArraySource(data, dataLength, true,
+		// ArraySource --> Encryption filter --> ArraySink
+		CryptoPP::ArraySource(&data[0], data.size(), true,
 			new CryptoPP::AuthenticatedEncryptionFilter(encryptor,
-				new CryptoPP::StringSink(encryptedData), false, FileEncrypter::GCM_TAG_LENGTH));
+				new CryptoPP::ArraySink(&encryptedData[0], encryptedData.size())));
 	}
 	catch (CryptoPP::Exception& e)
 	{
@@ -192,11 +329,12 @@ std::string FileEncrypter::cipherData(char password[], const byte data[], const 
 	return encryptedData;
 }
 
+
 /// <summary>
 /// Initializes a new instance of the <see cref="FileEncrypter"/> class.
 /// </summary>
 FileEncrypter::FileEncrypter()
-{	
+{
 	/*Empty*/
 }
 
@@ -205,6 +343,6 @@ FileEncrypter::FileEncrypter()
 /// Finalizes an instance of the <see cref="FileEncrypter"/> class.
 /// </summary>
 FileEncrypter::~FileEncrypter()
-{	
+{
 	/*Empty*/
 }
