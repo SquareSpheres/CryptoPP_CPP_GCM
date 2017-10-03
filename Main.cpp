@@ -1,64 +1,80 @@
-
+#include <iostream>
+#include "tclap\CmdLine.h"
+#include "spdlog\spdlog.h"
 #include "FileEncrypter.h"
-#include "Utils.h"
-#include "EncryptedFile.h"
 
 
-void printVector(std::vector<byte> &vec) {
-	for (std::vector<byte>::const_iterator i = vec.begin(); i != vec.end(); ++i)
-		std::cout << *i << ' ';
-	std::cout << std::endl;
-}
+
 
 int main(int argc, char* argv[])
 {
-	FileEncrypter enc;
-	std::string encryptedData = enc.cipherData("kalle", (byte*)"kalle", 6);
-	std::cout << "encrypted data = " << encryptedData << std::endl;
-
-	std::vector<char> fileData = fileUtils::ReadAllBytes("Does not Exist!");
-	std::cout << fileData.size() << std::endl;
-
-	std::vector<byte> data = { 'a','b','c' };
-	std::vector<byte> salt = { 'a','b','c' };
-	std::vector<byte> iv = { 'a','b','c' };
-	std::vector<byte> aad = { 'a','b','c','d','e','f','g' };
-
-	//printVector(data);
-	//printVector(salt);
-	//printVector(iv);
-	//printVector(aad);
-
-	EncryptedFile file(data, iv, salt, aad);
-
-	// change data
-	data[0] = 'A';
-	salt[0] = 'A';
-	iv[0] = 'A';
-	aad[0] = 'A';
 
 
+	std::shared_ptr<spdlog::logger> LOG = spdlog::stdout_color_mt("GCM_ENC_MAIN");
 
-	//printVector(data);
-	//printVector(salt);
-	//printVector(iv);
-	//printVector(aad);
+	try
+	{
+		TCLAP::CmdLine cmd("GCM File Encrypter \n\n Encrypt files using Galois/Counter Mode (GCM)", ' ', "0.1");
+		TCLAP::SwitchArg mod("u", "unlock", "decrypt files", false);
+		TCLAP::SwitchArg dir("d", "directory", "process files in a directory", false);
+		TCLAP::SwitchArg rec("r", "recursive", "look for files recursively. Must be used in combination with -d. If -d is not specified, the argument is ignored", false);
+		TCLAP::ValueArg<std::string> pass("p", "password", "password used for processing", true, "Password", "string");
+		TCLAP::UnlabeledMultiArg<std::string> fileArgs("files", "files/folders you want to process", true, "string");
 
-	//printVector(file.getData());
-	//printVector(file.getSalt());
-	//printVector(file.getIV());
-	//printVector(file.getAAD());
+		cmd.add(pass);
+		cmd.add(mod);
+		cmd.add(rec);
+		cmd.add(dir);
+		cmd.add(fileArgs);
+
+		cmd.parse(argc, argv);
+
+		std::string password = pass.getValue();
+		std::vector<std::string> files = fileArgs.getValue();
+		bool recursive = rec.getValue();
+		bool directory = dir.getValue();
+		bool decryptionMode = mod.getValue();
 
 
-	EncryptedFile in;
+
+		std::vector<filesystem::path> ALL_FILES;
+
+		if (directory) {
+			for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
+				if (!filesystem::is_directory(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : not a directory!", *it); continue; }
+				if (!filesystem::exists(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : does not exist!", *it); continue; }
+
+				std::vector<filesystem::path> tmp;
+				if (recursive) tmp = fileUtils::listFilesInDirRecursively(it->c_str());
+				else tmp = fileUtils::listFilesInDir(it->c_str());
+				ALL_FILES.insert(std::end(ALL_FILES), std::begin(tmp), std::end(tmp));
+			}
+		}
+		else {
+			for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it)
+			{
+				if (filesystem::is_directory(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : file is a directory", *it); continue; }
+				if (!filesystem::exists(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : file does not exist", *it); continue; }
+				ALL_FILES.push_back(filesystem::path(*it));
+			}
+		}
 
 
-	fileUtils::writeEncryptedFileToDisk("\\test.test", file);
-	in = fileUtils::readEncryptedFileFromDisk("\\test.test");
+		FileEncrypter enc;
 
-	printVector(in.getAAD());
+		if (decryptionMode) {
+			enc.decryptFiles(ALL_FILES, password);
+		}
+		else {
+			enc.encryptFiles(ALL_FILES, password);
+		}
 
+		password.erase(password.begin(), password.end());
 
-	int wait;
-	std::cin >> wait;
+	}
+	catch (const TCLAP::ArgException &e)
+	{
+		LOG->critical(e.what());
+	}
+
 }
