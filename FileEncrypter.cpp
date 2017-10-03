@@ -6,6 +6,7 @@
 
 #include "spdlog\spdlog.h"
 #include "IOException.h"
+#include "GeneralSecurityException.h"
 
 #include "aes.h"
 #include "gcm.h"
@@ -230,7 +231,9 @@ std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem
 			// generate AES key
 			CryptoPP::SecByteBlock key = getAESKey(password, (char*)salt->data());
 			// decrypt data
-			std::vector<byte> decryptedData = decipherData(key, iv->data(), *encData);
+			std::vector<byte> decryptedData;
+			try { decryptedData = decipherData(key, iv->data(), *encData); }
+			catch (const GeneralSecurityException &ge) { LOG->critical(ge.what());	continue; }
 			// get new name for decrypted file
 			filesystem::path newFilePath = FileEncrypter::generateDecryptionName(*it);
 			// write data to new file
@@ -247,10 +250,6 @@ std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem
 			continue;
 		}
 	}
-
-
-
-
 
 	return std::vector<filesystem::path>();
 }
@@ -281,6 +280,7 @@ std::vector<byte> FileEncrypter::decipherData(CryptoPP::SecByteBlock &key, const
 	catch (CryptoPP::HashVerificationFilter::HashVerificationFailed& e)
 	{
 		LOG->critical(e.what());
+		throw GeneralSecurityException(e.what());
 	}
 	catch (CryptoPP::InvalidArgument& e)
 	{
