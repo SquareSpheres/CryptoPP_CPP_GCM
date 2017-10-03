@@ -15,10 +15,9 @@
 static std::shared_ptr<spdlog::logger> LOG = spdlog::stdout_color_mt("FileEncrypter");
 
 
-CryptoPP::SecByteBlock FileEncrypter::getAESKeyAlt(char password[], char salt[])
+CryptoPP::SecByteBlock FileEncrypter::getAESKeyAlt(const std::string &password, char salt[])
 {
 	// get password and salt length
-	size_t passwordLength = strlen(password);
 	size_t saltLength = strlen(salt);
 
 	// create a key with specified size
@@ -26,7 +25,7 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKeyAlt(char password[], char salt[])
 
 	// derive key using HMAC-based Extract-and-Expand key derivation function by Krawczyk and Eronen.
 	CryptoPP::HKDF<CryptoPP::SHA256> keyDerivationFunction;
-	unsigned int bufferSize = keyDerivationFunction.DeriveKey(key, key.size(), (const byte*)password, passwordLength, (const byte*)salt, saltLength, NULL, 0);
+	unsigned int bufferSize = keyDerivationFunction.DeriveKey(key, key.size(), (const byte*)password.c_str(), password.length(), (const byte*)salt, saltLength, NULL, 0);
 
 	// check how many bytes were produces in the key array
 	if (bufferSize < 32) LOG->error("number of bytes returned is lower than size of buffer");
@@ -34,11 +33,8 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKeyAlt(char password[], char salt[])
 	return key;
 }
 
-
-CryptoPP::SecByteBlock FileEncrypter::getAESKey(char password[], char salt[])
+CryptoPP::SecByteBlock FileEncrypter::getAESKey(const std::string &password, char salt[])
 {
-	// get password and salt length
-	size_t passwordLength = strlen(password);
 
 	// create a key with specified size
 	CryptoPP::SecByteBlock key(CryptoPP::SHA256::DIGESTSIZE);
@@ -47,8 +43,8 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKey(char password[], char salt[])
 	CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256> keyDerivationFunction;
 	// "purpose byte" is ignored for PBKDF2, and if therefore set to 0
 	// "timeInSeconds" is ignored because iteration count is specified
-	unsigned int achievedItCount = keyDerivationFunction.DeriveKey(key, key.size(), 0, (const byte*)password,
-		passwordLength, (const byte*)salt, FileEncrypter::SALT_LENGTH, FileEncrypter::KDF_ITERATION_COUNT, 0);
+	unsigned int achievedItCount = keyDerivationFunction.DeriveKey(key, key.size(), 0, (const byte*)password.c_str(),
+		password.length(), (const byte*)salt, FileEncrypter::SALT_LENGTH, FileEncrypter::KDF_ITERATION_COUNT, 0);
 
 	if (achievedItCount < FileEncrypter::KDF_ITERATION_COUNT) LOG->error("achieved iteration count is lower than specified iteration count");
 
@@ -134,7 +130,7 @@ filesystem::path FileEncrypter::generateDecryptionName(filesystem::path encrypte
 	return newPath;
 }
 
-std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem::path> files, char password[])
+std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem::path> files, const std::string &password)
 {
 
 	//create new success vector
@@ -147,6 +143,7 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 
 	for (auto it = files.begin(); it != files.end(); ++it)
 	{
+
 		// check if file exist
 		if (!filesystem::exists(*it)) {
 			LOG->warn("Skipping {}, Cause : file does not exist", it->string());
@@ -185,7 +182,7 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 		try
 		{
 			EncryptedFile::writeEncryptedFileToDisk(newFilePath.string(), encryptedFile);
-			LOG->info("{} encrypted to {}", it->string(), newFilePath.string());
+			LOG->info("{}/{}  {} encrypted to {}", (it - files.begin()) + 1, files.size(), it->string(), newFilePath.string());
 			successfullyEncrypted.push_back(*it);
 
 		}
@@ -199,7 +196,7 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 	return successfullyEncrypted;
 }
 
-std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const size_t num_files, char password[])
+std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const size_t num_files, const std::string &password)
 {
 	// create vector from 2d array
 	std::vector<filesystem::path> paths(num_files);
@@ -211,10 +208,7 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const s
 	return encryptFiles(paths, password);
 }
 
-
-
-
-std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem::path> files, char password[])
+std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem::path> files, const std::string &password)
 {
 
 	// create new success vector
@@ -261,7 +255,7 @@ std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem
 	return std::vector<filesystem::path>();
 }
 
-std::vector<filesystem::path> FileEncrypter::decryptFiles(char ** files, const size_t num_files, char password[])
+std::vector<filesystem::path> FileEncrypter::decryptFiles(char ** files, const size_t num_files, const std::string &password)
 {
 	return std::vector<filesystem::path>();
 }

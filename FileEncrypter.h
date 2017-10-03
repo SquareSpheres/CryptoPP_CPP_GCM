@@ -18,7 +18,7 @@ private:
 	/// <param name="password">The password.</param>
 	/// <param name="salt">The salt.</param>
 	/// <returns>A key</returns>
-	CryptoPP::SecByteBlock getAESKeyAlt(char password[], char salt[]);
+	CryptoPP::SecByteBlock getAESKeyAlt(const std::string &password, char salt[]);
 
 
 	/// <summary>
@@ -27,7 +27,7 @@ private:
 	/// <param name="password">The password.</param>
 	/// <param name="salt">The salt.</param>
 	/// <returns>A key</returns>
-	CryptoPP::SecByteBlock getAESKey(char password[], char salt[]);
+	CryptoPP::SecByteBlock getAESKey(const std::string &password, char salt[]);
 
 
 	/// <summary>
@@ -63,6 +63,9 @@ private:
 	/// <returns>A unique name</returns>
 	filesystem::path generateDecryptionName(filesystem::path encryptedFile);
 
+	std::vector<byte> decipherData(CryptoPP::SecByteBlock &key, const byte iv[], const std::vector<byte> &encryptedData);
+	std::vector<byte> cipherData(CryptoPP::SecByteBlock &key, const byte iv[], const byte data[], const size_t dataLength);
+	std::vector<byte> cipherData(CryptoPP::SecByteBlock &key, const byte iv[], const std::vector<byte> &data);
 
 public:
 	const static unsigned int IV_LENGTH = 32; //bytes
@@ -79,7 +82,7 @@ public:
 	/// <returns>
 	/// A vector of the files that were successfully encrypted
 	/// </returns>
-	std::vector<filesystem::path> encryptFiles(std::vector<filesystem::path> files, char password[]);
+	std::vector<filesystem::path> encryptFiles(std::vector<filesystem::path> files, const std::string &password);
 
 	/// <summary>
 	/// Encrypts one or many files. The array can contain one, or many files. The files can be files, or folders.
@@ -91,7 +94,7 @@ public:
 	/// <returns>
 	/// A vector of the files that were successfully encrypted
 	/// </returns>
-	std::vector<filesystem::path> encryptFiles(char **files, const size_t num_files, char password[]);
+	std::vector<filesystem::path> encryptFiles(char **files, const size_t num_files, const std::string &password);
 
 	/// <summary>
 	/// Decrypts one or many files. The vector can contain one, or many files. The files can be files, or folders.
@@ -102,7 +105,7 @@ public:
 	/// <returns>
 	/// A vector of the files that were successfully decrypted
 	/// </returns>
-	std::vector<filesystem::path> decryptFiles(std::vector<filesystem::path> files, char password[]);
+	std::vector<filesystem::path> decryptFiles(std::vector<filesystem::path> files, const std::string &password);
 
 	/// <summary>
 	/// Decrypts one or many files. The array can contain one, or many files. The files can be files, or folders.
@@ -114,15 +117,10 @@ public:
 	/// <returns>
 	/// A vector of the files that were successfully decrypted
 	/// </returns>
-	std::vector<filesystem::path> decryptFiles(char **files, const size_t num_files, char password[]);
+	std::vector<filesystem::path> decryptFiles(char **files, const size_t num_files, const std::string &password);
 
 
 
-	std::vector<byte> decipherData(CryptoPP::SecByteBlock &key, const byte iv[], const std::vector<byte> &encryptedData);
-	std::vector<byte> cipherData(CryptoPP::SecByteBlock &key, const byte iv[], const byte data[], const size_t dataLength);
-	std::vector<byte> cipherData(CryptoPP::SecByteBlock &key, const byte iv[], const std::vector<byte> &data);
-
-	void testMethod();
 
 
 
