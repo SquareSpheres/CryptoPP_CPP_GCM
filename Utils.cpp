@@ -1,9 +1,5 @@
 #include "Utils.h"
-
 #include <fstream>
-#include <iostream>
-
-
 
 // Logger
 static std::shared_ptr<spdlog::logger> LOG = spdlog::stdout_color_mt("FileUtils");
@@ -22,7 +18,7 @@ std::vector<unsigned char> fileUtils::ReadAllBytes(char const * filename)
 		std::ifstream::pos_type pos = ifs.tellg();
 		std::vector<unsigned char>  result(pos);
 		ifs.seekg(0, std::ios::beg);
-		ifs.read((char*)&result[0], pos);
+		ifs.read(reinterpret_cast<char*>(&result[0]), pos);
 		ifs.close();
 		return result;
 	}
@@ -42,7 +38,7 @@ void fileUtils::WriteAllBytes(char const * filename, std::vector<unsigned char> 
 	try
 	{
 		ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-		ofs.write((char*)data.data(), data.size());
+		ofs.write(reinterpret_cast<char*>(data.data()), data.size());
 		ofs.close();
 
 	}
