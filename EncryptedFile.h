@@ -50,22 +50,22 @@ public:
 	/// Gets the encrypted data.
 	/// </summary>
 	/// <returns></returns>
-	const std::vector<byte> * getData() { return &this->data; }
+	const std::vector<byte> * getData() const { return &this->data; }
 	/// <summary>
 	/// Gets the iv.
 	/// </summary>
 	/// <returns></returns>
-	const std::vector<byte> * getIV() { return &this->iv; }
+	const std::vector<byte> * getIV() const { return &this->iv; }
 	/// <summary>
 	/// Gets the salt.
 	/// </summary>
 	/// <returns></returns>
-	const std::vector<byte> * getSalt() { return &this->salt; }
+	const std::vector<byte> * getSalt() const { return &this->salt; }
 	/// <summary>
 	/// Gets the additional authenticated data.
 	/// </summary>
 	/// <returns></returns>
-	const std::vector<byte> * getAAD() { return &this->aad; }
+	const std::vector<byte> * getAAD() const { return &this->aad; }
 
 
 	/// <summary>
