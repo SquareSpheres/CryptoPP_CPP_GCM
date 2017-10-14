@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <experimental\filesystem>
-#include "spdlog\spdlog.h"
+#include "spdlog/spdlog.h"
 
 namespace fileUtils {
 
