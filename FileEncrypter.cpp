@@ -189,8 +189,9 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 		}
 		catch (const IOException &e)
 		{
-			LOG->debug("Writing encrypted file failed. Do some stuff here");
-			//TODO
+			LOG->critical("Failed to write {} to disk",newFilePath.string());
+			throw;
+			//TODO handle exception here
 		}
 	}
 
