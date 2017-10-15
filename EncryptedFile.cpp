@@ -1,7 +1,7 @@
 #include "EncryptedFile.h"
-#include "cereal\archives\binary.hpp"
-#include "cereal\types\vector.hpp"
-#include "spdlog\spdlog.h"
+#include "cereal/archives/binary.hpp"
+#include "cereal/types/vector.hpp"
+#include "spdlog/spdlog.h"
 #include "IOException.h"
 #include <fstream>
 
