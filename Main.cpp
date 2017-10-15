@@ -1,4 +1,3 @@
-#include <iostream>
 #include "tclap\CmdLine.h"
 #include "spdlog\spdlog.h"
 #include "FileEncrypter.h"
@@ -8,8 +7,6 @@
 
 int main(int argc, char* argv[])
 {
-
-
 	std::shared_ptr<spdlog::logger> LOG = spdlog::stdout_color_mt("GCM_ENC_MAIN");
 
 	try

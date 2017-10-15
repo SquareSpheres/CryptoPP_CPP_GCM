@@ -8,7 +8,4 @@ public:
 	GeneralSecurityException() :runtime_error("General security exception has occurred") {}
 	explicit GeneralSecurityException(const std::string& what_arg) :runtime_error(what_arg) {}
 	~GeneralSecurityException() {}
-
-private:
-
 };
