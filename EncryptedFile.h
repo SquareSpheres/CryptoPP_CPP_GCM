@@ -55,7 +55,7 @@ public:
 	/// Gets the iv.
 	/// </summary>
 	/// <returns></returns>
-	const std::vector<byte> * getIV() const { return &this->iv; }
+	const std::vector<byte> * getIv() const { return &this->iv; }
 	/// <summary>
 	/// Gets the salt.
 	/// </summary>
@@ -65,7 +65,7 @@ public:
 	/// Gets the additional authenticated data.
 	/// </summary>
 	/// <returns></returns>
-	const std::vector<byte> * getAAD() const { return &this->aad; }
+	const std::vector<byte> * getAad() const { return &this->aad; }
 
 
 	/// <summary>
