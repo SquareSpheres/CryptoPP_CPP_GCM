@@ -18,7 +18,7 @@ private:
 	/// <param name="password">The password.</param>
 	/// <param name="salt">The salt.</param>
 	/// <returns>A key</returns>
-	CryptoPP::SecByteBlock getAESKeyAlt(const std::string &password, char salt[]);
+	CryptoPP::SecByteBlock getAesKeyAlt(const std::string &password, char salt[]);
 
 
 	/// <summary>
@@ -27,7 +27,7 @@ private:
 	/// <param name="password">The password.</param>
 	/// <param name="salt">The salt.</param>
 	/// <returns>A key</returns>
-	CryptoPP::SecByteBlock getAESKey(const std::string &password, char salt[]);
+	CryptoPP::SecByteBlock getAesKey(const std::string &password, char salt[]);
 
 
 	/// <summary>
@@ -35,7 +35,7 @@ private:
 	/// </summary>
 	/// <param name="iv">Pointer to iv array.</param>
 	/// <param name="ivSize">Size of the iv.</param>
-	void generateRandomIV(byte * const iv, unsigned int ivSize);
+	void generateRandomIV(byte * const iv, const unsigned int ivSize);
 
 
 	/// <summary>
@@ -43,7 +43,7 @@ private:
 	/// </summary>
 	/// <param name="salt">Pointer to the salt array.</param>
 	/// <param name="saltSize">Size of the salt.</param>
-	void generateRandomSalt(byte * const salt, unsigned saltSize);
+	void generateRandomSalt(byte * const salt, const unsigned saltSize);
 
 
 	/// <summary>
@@ -118,10 +118,6 @@ public:
 	/// A vector of the files that were successfully decrypted
 	/// </returns>
 	std::vector<filesystem::path> decryptFiles(char **files, const size_t num_files, const std::string &password);
-
-
-
-
 
 
 	FileEncrypter();

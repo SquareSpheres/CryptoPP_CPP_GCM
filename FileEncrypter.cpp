@@ -16,17 +16,17 @@
 static std::shared_ptr<spdlog::logger> LOG = spdlog::stdout_color_mt("FileEncrypter");
 
 
-CryptoPP::SecByteBlock FileEncrypter::getAESKeyAlt(const std::string &password, char salt[])
+CryptoPP::SecByteBlock FileEncrypter::getAesKeyAlt(const std::string &password, char salt[])
 {
 	// get password and salt length
-	size_t saltLength = strlen(salt);
+	const size_t saltLength = strlen(salt);
 
 	// create a key with specified size
 	CryptoPP::SecByteBlock key(CryptoPP::SHA256::DIGESTSIZE);
 
 	// derive key using HMAC-based Extract-and-Expand key derivation function by Krawczyk and Eronen.
 	CryptoPP::HKDF<CryptoPP::SHA256> keyDerivationFunction;
-	unsigned int bufferSize = keyDerivationFunction.DeriveKey(key, key.size(), reinterpret_cast<const byte*>(password.c_str()), password.length(), reinterpret_cast<const byte*>(salt), saltLength, nullptr, 0);
+	const unsigned int bufferSize = keyDerivationFunction.DeriveKey(key, key.size(), reinterpret_cast<const byte*>(password.c_str()), password.length(), reinterpret_cast<const byte*>(salt), saltLength, nullptr, 0);
 
 	// check how many bytes were produces in the key array
 	if (bufferSize < 32) LOG->error("number of bytes returned is lower than size of buffer");
@@ -34,7 +34,7 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKeyAlt(const std::string &password, 
 	return key;
 }
 
-CryptoPP::SecByteBlock FileEncrypter::getAESKey(const std::string &password, char salt[])
+CryptoPP::SecByteBlock FileEncrypter::getAesKey(const std::string &password, char salt[])
 {
 
 	// create a key with specified size
@@ -44,7 +44,7 @@ CryptoPP::SecByteBlock FileEncrypter::getAESKey(const std::string &password, cha
 	CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA256> keyDerivationFunction;
 	// "purpose byte" is ignored for PBKDF2, and if therefore set to 0
 	// "timeInSeconds" is ignored because iteration count is specified
-	unsigned int achievedItCount = keyDerivationFunction.DeriveKey(key, key.size(), 0, reinterpret_cast<const byte*>(password.c_str()),
+	const unsigned int achievedItCount = keyDerivationFunction.DeriveKey(key, key.size(), 0, reinterpret_cast<const byte*>(password.c_str()),
 		password.length(), reinterpret_cast<const byte*>(salt), FileEncrypter::SALT_LENGTH, FileEncrypter::KDF_ITERATION_COUNT, 0);
 
 	if (achievedItCount < FileEncrypter::KDF_ITERATION_COUNT) LOG->error("achieved iteration count is lower than specified iteration count");
@@ -67,7 +67,7 @@ or OS_GenerateRandomBlock on Windows. Both wrap the the Operating System's gener
 for you using the underlying OS's entropy pool by way of OS_GenerateRandomBlock."
 
 */
-void FileEncrypter::generateRandomIV(byte * const iv, unsigned int ivSize)
+void FileEncrypter::generateRandomIV(byte * const iv, const unsigned int ivSize)
 {
 	//initialize new random for each function call
 	CryptoPP::AutoSeededRandomPool random;
@@ -90,7 +90,7 @@ or OS_GenerateRandomBlock on Windows. Both wrap the the Operating System's gener
 for you using the underlying OS's entropy pool by way of OS_GenerateRandomBlock."
 
 */
-void FileEncrypter::generateRandomSalt(byte * const salt, unsigned saltSize)
+void FileEncrypter::generateRandomSalt(byte * const salt, const unsigned saltSize)
 {
 	//initialize new random for each function call
 	CryptoPP::AutoSeededRandomPool random;
@@ -140,7 +140,7 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 	byte salt[FileEncrypter::SALT_LENGTH];
 	FileEncrypter::generateRandomSalt(salt, FileEncrypter::SALT_LENGTH);
 	// generate new AES key
-	CryptoPP::SecByteBlock key = getAESKey(password, reinterpret_cast<char*>(salt));
+	CryptoPP::SecByteBlock key = getAesKey(password, reinterpret_cast<char*>(salt));
 
 	for (auto it = files.begin(); it != files.end(); ++it)
 	{
@@ -167,7 +167,7 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 		}
 
 		// read file data
-		std::vector<byte> dataVector = fileUtils::ReadAllBytes(it->string().c_str());
+		const std::vector<byte> dataVector = fileUtils::ReadAllBytes(it->string().c_str());
 		// generate new IV
 		byte iv[FileEncrypter::IV_LENGTH];
 		FileEncrypter::generateRandomIV(iv, FileEncrypter::IV_LENGTH);
@@ -198,11 +198,11 @@ std::vector<filesystem::path> FileEncrypter::encryptFiles(std::vector<filesystem
 	return successfullyEncrypted;
 }
 
-std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const size_t num_files, const std::string &password)
+std::vector<filesystem::path> FileEncrypter::encryptFiles(char ** files, const size_t numFiles, const std::string &password)
 {
 	// create vector from 2d array
-	std::vector<filesystem::path> paths(num_files);
-	for (size_t i = 0; i < num_files; i++)
+	std::vector<filesystem::path> paths(numFiles);
+	for (size_t i = 0; i < numFiles; i++)
 	{
 		paths[i] = filesystem::path(files[i]);
 	}
@@ -225,16 +225,16 @@ std::vector<filesystem::path> FileEncrypter::decryptFiles(std::vector<filesystem
 
 			// get values from encrypted file
 			const std::vector<byte> *encData = encryptedFile.getData();
-			const std::vector<byte> *iv = encryptedFile.getIV();
+			const std::vector<byte> *iv = encryptedFile.getIv();
 			const std::vector<byte> *salt = encryptedFile.getSalt();
-			const std::vector<byte> *aad = encryptedFile.getAAD();
+			const std::vector<byte> *aad = encryptedFile.getAad();
 
 			// tedious cast (use c-style cast instead?)
 			const char * saltConstPtr = reinterpret_cast<const char*>(salt->data());
 			char * saltPtr = const_cast<char*>(saltConstPtr);
 
 			// generate AES key
-			CryptoPP::SecByteBlock key = getAESKey(password, saltPtr);
+			CryptoPP::SecByteBlock key = getAesKey(password, saltPtr);
 			// decrypt data
 			std::vector<byte> decryptedData;
 			try { decryptedData = decipherData(key, iv->data(), *encData); }
