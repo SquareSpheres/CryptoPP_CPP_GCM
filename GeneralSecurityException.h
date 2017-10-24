@@ -6,6 +6,6 @@ class GeneralSecurityException : public std::runtime_error
 {
 public:
 	GeneralSecurityException() :runtime_error("General security exception has occurred") {}
-	explicit GeneralSecurityException(const std::string& what_arg) :runtime_error(what_arg) {}
+	explicit GeneralSecurityException(const std::string& whatArg) :runtime_error(whatArg) {}
 	~GeneralSecurityException() {}
 };

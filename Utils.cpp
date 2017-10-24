@@ -49,7 +49,7 @@ void fileUtils::WriteAllBytes(char const * filename, std::vector<unsigned char> 
 
 }
 
-std::vector<filesystem::path> fileUtils::listFilesInDirRecursively(const char filename[])
+std::vector<filesystem::path> fileUtils::ListFilesInDirRecursively(const char filename[])
 {
 	std::vector<filesystem::path> files;
 
@@ -69,7 +69,7 @@ std::vector<filesystem::path> fileUtils::listFilesInDirRecursively(const char fi
 }
 
 
-std::vector<filesystem::path> fileUtils::listFilesInDir(const char filename[])
+std::vector<filesystem::path> fileUtils::ListFilesInDir(const char filename[])
 {
 	std::vector<filesystem::path> files;
 

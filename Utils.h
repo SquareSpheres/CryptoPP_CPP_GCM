@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <experimental\filesystem>
+#include <experimental/filesystem>
 #include "spdlog/spdlog.h"
 
 namespace fileUtils {
@@ -24,9 +24,19 @@ namespace fileUtils {
 	/// <returns></returns>
 	void WriteAllBytes(char const* filename, std::vector<unsigned char> data);
 
+	/// <summary>
+	/// List all files in directory and all subdirectories
+	/// </summary>
+	/// <param name="filename">File location</param>
+	/// <returns>A vector of paths</returns>
+	std::vector<filesystem::path> ListFilesInDirRecursively(const char filename[]);
 
-	std::vector<filesystem::path> listFilesInDirRecursively(const char filename[]);
-	std::vector<filesystem::path> listFilesInDir(const char filename[]);
+	/// <summary>
+	/// List all files in directory
+	/// </summary>
+	/// <param name="filename">File location</param>
+	/// <returns>A vector of paths</returns>
+	std::vector<filesystem::path> ListFilesInDir(const char filename[]);
 
 }
 
