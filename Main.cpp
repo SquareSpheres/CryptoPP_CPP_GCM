@@ -28,31 +28,32 @@ int main(int argc, char* argv[])
 
 		std::string password = pass.getValue();
 		std::vector<std::string> files = fileArgs.getValue();
-		bool recursive = rec.getValue();
-		bool directory = dir.getValue();
-		bool decryptionMode = mod.getValue();
+		const bool recursive = rec.getValue();
+		const bool directory = dir.getValue();
+		const bool decryptionMode = mod.getValue();
 
 
 
 		std::vector<filesystem::path> ALL_FILES;
 
 		if (directory) {
-			for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it) {
-				if (!filesystem::is_directory(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : not a directory!", *it); continue; }
-				if (!filesystem::exists(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : does not exist!", *it); continue; }
+			for (auto file : files)
+			{
+				if (!filesystem::is_directory(filesystem::path(file))) { LOG->warn("SKIPPING {}. Cause : not a directory!", file); continue; }
+				if (!filesystem::exists(filesystem::path(file))) { LOG->warn("SKIPPING {}. Cause : does not exist!", file); continue; }
 
 				std::vector<filesystem::path> tmp;
-				if (recursive) tmp = fileUtils::listFilesInDirRecursively(it->c_str());
-				else tmp = fileUtils::listFilesInDir(it->c_str());
+				if (recursive) tmp = fileUtils::ListFilesInDirRecursively(file.c_str());
+				else tmp = fileUtils::ListFilesInDir(file.c_str());
 				ALL_FILES.insert(std::end(ALL_FILES), std::begin(tmp), std::end(tmp));
 			}
 		}
 		else {
-			for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it)
+			for (auto file : files)
 			{
-				if (filesystem::is_directory(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : file is a directory", *it); continue; }
-				if (!filesystem::exists(filesystem::path(*it))) { LOG->warn("SKIPPING {}. Cause : file does not exist", *it); continue; }
-				ALL_FILES.push_back(filesystem::path(*it));
+				if (filesystem::is_directory(filesystem::path(file))) { LOG->warn("SKIPPING {}. Cause : file is a directory", file); continue; }
+				if (!filesystem::exists(filesystem::path(file))) { LOG->warn("SKIPPING {}. Cause : file does not exist", file); continue; }
+				ALL_FILES.push_back(filesystem::path(file));
 			}
 		}
 
